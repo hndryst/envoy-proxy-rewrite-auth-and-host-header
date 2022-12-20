@@ -1,5 +1,7 @@
 steps:
+  # build container image
   - name: "gcr.io/cloud-builders/docker"
+    id: Build image
     args:
       [
         "build",
@@ -7,9 +9,45 @@ steps:
         "${_LOCATION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE}:$SHORT_SHA",
         ".",
       ]
+  # push image to Artifact Registry
   - name: "gcr.io/cloud-builders/docker"
+    id: Push to app source repository
     args:
       [
         "push",
         "${_LOCATION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE}:$SHORT_SHA",
       ]
+  # clone envoy-proxy-env for modifying k8s deployment value
+  - name: "gcr.io/cloud-builders/gcloud"
+    id: Clone env repository
+    entrypoint: /bin/sh
+    args:
+      - "-c"
+      - |
+        gcloud source repos clone envoy-proxy-env && \
+        cd envoy-proxy-env && \
+        git config user.email $(gcloud auth list --filter=status:ACTIVE --format='value(account)')
+  # replace deployment value
+  - name: "gcr.io/cloud-builders/gcloud"
+    id: Generate manifest
+    entrypoint: /bin/sh
+    args:
+      - "-c"
+      - |
+        sed "s/LOCATION/${_LOCATION}/g" deployment.yaml.tpl | \
+        sed "s/PROJECT_ID/$PROJECT_ID/g" | \
+        sed "s/REPO/${_REPOSITORY}/g" | \
+        sed "s/IMAGE/${_IMAGE}}/g" | \ 
+        sed "s/SHORT_SHA/$SHORT_SHA/g" > envoy-proxy-env/deployment.yaml
+  # push to envoy-proxy-env and trigger deploy to GKE
+  - name: "gcr.io/cloud-builders/gcloud"
+    id: Push manifest
+    entrypoint: /bin/sh
+    args:
+      - "-c"
+      - |
+        set -x && \
+        cd envoy-proxy-env && \
+        git add deployment.yaml && \
+        git commit -m "Deploying image ${_LOCATION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE}:$SHORT_SHA Built from commit ${COMMIT_SHA} of repository ${_REPOSITORY}"
+        git push origin main
