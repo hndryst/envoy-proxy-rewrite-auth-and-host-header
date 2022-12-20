@@ -34,20 +34,29 @@ steps:
     args:
       - "-c"
       - |
+        cd envoy-proxy-env &&
         sed "s/LOCATION/${_LOCATION}/g" deployment.yaml.tpl | \
         sed "s/PROJECT_ID/$PROJECT_ID/g" | \
         sed "s/REPO/${_REPOSITORY}/g" | \
-        sed "s/IMAGE/${_IMAGE}}/g" | \ 
-        sed "s/SHORT_SHA/$SHORT_SHA/g" > github_hndryst_envoy-proxy-env/deployment.yaml
-  # push to github_hndryst_envoy-proxy-env and trigger deploy to GKE
-  - name: "gcr.io/cloud-builders/gcloud"
-    id: Push manifest
-    entrypoint: /bin/sh
+        sed "s/IMAGE/${_IMAGE}/g" | \
+        sed "s/SHORT_SHA/$SHORT_SHA/g" > deployment.yaml
+  # push to envoy-proxy-env
+  #- name: "gcr.io/cloud-builders/gcloud"
+  #  id: Push manifest
+  #  entrypoint: /bin/sh
+  #  args:
+  #    - "-c"
+  #    - |
+  #      set -x && \
+  #      cd envoy-proxy-env && \
+  #      git add deployment.yaml && \
+  #      git commit -m "Deploying image ${_LOCATION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE}:$SHORT_SHA Built from commit ${COMMIT_SHA} of repository ${_REPOSITORY}"
+  #      git push origin
+  # deploy to GKE
+  - name: "gcr.io/cloud-builders/gke-deploy"
+    id: Deploy to GKE
     args:
-      - "-c"
-      - |
-        set -x && \
-        cd github_hndryst_envoy-proxy-env && \
-        git add deployment.yaml && \
-        git commit -m "Deploying image ${_LOCATION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE}:$SHORT_SHA Built from commit ${COMMIT_SHA} of repository ${_REPOSITORY}"
-        git push origin
+      - run
+      - --filename=envoy-proxy-env/deployment.yaml
+      - --location=asia-southeast2-a
+      - --cluster=cluster-1
