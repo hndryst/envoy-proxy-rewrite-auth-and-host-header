@@ -50,4 +50,4 @@ steps:
         cd github_hndryst_envoy-proxy-env && \
         git add deployment.yaml && \
         git commit -m "Deploying image ${_LOCATION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE}:$SHORT_SHA Built from commit ${COMMIT_SHA} of repository ${_REPOSITORY}"
-        git push origin main
+        git push origin
