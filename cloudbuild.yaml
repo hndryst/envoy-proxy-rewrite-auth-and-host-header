@@ -25,8 +25,9 @@ steps:
       - "-c"
       - |
         gcloud source repos clone github_hndryst_envoy-proxy-env && \
-        pwd && ls -la \
         cd github_hndryst_envoy-proxy-env && \
+        git checkout main && \
+        pwd && ls -la \
         git config user.email $(gcloud auth list --filter=status:ACTIVE --format='value(account)')
   # replace deployment value
   - name: "gcr.io/cloud-builders/gcloud"
