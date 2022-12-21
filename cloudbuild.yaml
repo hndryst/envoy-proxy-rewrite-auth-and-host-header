@@ -34,7 +34,7 @@ steps:
     args:
       - "-c"
       - |
-        cd envoy-proxy-env &&
+        cd github_hndryst_envoy-proxy-env &&
         sed "s/LOCATION/${_LOCATION}/g" deployment.yaml.tpl | \
         sed "s/PROJECT_ID/$PROJECT_ID/g" | \
         sed "s/REPO/${_REPOSITORY}/g" | \
@@ -57,6 +57,6 @@ steps:
     id: Deploy to GKE
     args:
       - run
-      - --filename=envoy-proxy-env/deployment.yaml
+      - --filename=github_hndryst_envoy-proxy-env/deployment.yaml
       - --location=asia-southeast2-a
-      - --cluster=cluster-1
+      - --cluster=qris-piloting-cluster
